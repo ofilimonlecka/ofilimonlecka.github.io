@@ -66,6 +66,7 @@
         <section id="about">
             <h2>About</h2>
             <p>This section gives information about the website or its creator.</p>
+            <div id="purchase-button-container"></div>
         </section>
 
         <section id="contact">
@@ -77,6 +78,30 @@
     <footer>
         <p>&copy; 2025 Your Website. All rights reserved.</p>
     </footer>
+
+    <script type="module">
+        import { createPurchaseButtonExperience } from "https://js.sbx.supertab.co/v1/experiences.js";
+
+        const { show } = await createPurchaseButtonExperience({
+            containerElement: document.getElementById("purchase-button-container"),
+            experienceId: "experience.601f09d5-842d-439f-8af8-bd94d4a08d9e",
+            clientId: "live_client.6edc137d-5253-46a0-a29d-631a38a77af5",
+            merchantName: "Github pages",
+            merchantLogoUrl: "",
+            onPurchaseCompleted: () => {
+                //insert your code to grant user access
+                console.log("Purchase completed!");
+            },
+            onPurchaseCanceled: () => {
+                //insert your code to handle when purchase is not completed
+                console.log("Purchase canceled!");
+            },
+            onError: () => {
+                //insert your code to handle an unexpected error
+                console.error("Purchase error!");
+            },
+        });
+    </script>
 
 </body>
 </html>
