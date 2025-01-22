@@ -7,29 +7,47 @@ body {
     padding: 0;
     line-height: 1.6;
 }
-header {
-    background: #007BFF;
-    color: white;
-    padding: 1rem 0;
-    text-align: center;
-}
+
+// Updated navigation styles
 nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     display: flex;
     justify-content: center;
     background: #333;
-    padding: 0.5rem 0;
+    padding: 1rem 0;
+    z-index: 1000; // Ensures nav stays on top
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); // Adds subtle shadow
 }
+
 nav a {
     color: white;
-    margin: 0 1rem;
+    margin: 0 2rem;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+nav a:hover {
+    color: #007BFF;
     text-decoration: none;
 }
-nav a:hover {
-    text-decoration: underline;
+
+// Adjust header to account for fixed nav
+header {
+    margin-top: 60px; // Height of nav + some spacing
+    background: #007BFF;
+    color: white;
+    padding: 2rem 0;
+    text-align: center;
 }
+
 main {
     padding: 1rem;
 }
+
 footer {
     background: #333;
     color: white;
