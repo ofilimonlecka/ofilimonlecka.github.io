@@ -4,24 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About - Simple HTML Website</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-
-    <header>
-        <h1>About Us</h1>
-    </header>
-
+    <!-- Navigation must come first for fixed top bar -->
     <nav>
         <a href="index.html">Home</a>
         <a href="about.html">About</a>
         <a href="#contact">Contact</a>
     </nav>
 
+    <header>
+        <h1>About Us</h1>
+    </header>
+
     <main>
         <section id="about">
             <h2>About Our Company</h2>
-            <div id="protected-content" style="display: none;">
+            <!-- Remove display:none to show initial content -->
+            <p>To view our company information, please subscribe.</p>
+            
+            <div id="protected-content">
                 <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
                 
                 <h3>Our Mission</h3>
@@ -43,8 +46,12 @@
     <script type="module">
         import { createPaygateExperience } from "https://js.sbx.supertab.co/v1/experiences.js";
 
+        // Get the protected content element
         const protectedContent = document.getElementById('protected-content');
         
+        // Hide the protected content initially
+        protectedContent.style.display = 'none';
+
         const { show } = await createPaygateExperience({
             clientId: "live_client.6edc137d-5253-46a0-a29d-631a38a77af5",
             experienceId: "experience.56d6a3e7-7975-4a8c-b9c1-ff92b02c4e6c",
@@ -69,9 +76,8 @@
             },
         });
 
-        // Show the paygate immediately when the page loads
+        // Show the paygate immediately
         show();
     </script>
-
 </body>
 </html> 
