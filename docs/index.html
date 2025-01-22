@@ -27,7 +27,6 @@
         <section id="about">
             <h2>About</h2>
             <p>This section gives information about the website or its creator.</p>
-            <div id="purchase-button-container"></div>
         </section>
 
         <section id="contact">
@@ -41,27 +40,39 @@
     </footer>
 
     <script type="module">
-        import { createPurchaseButtonExperience } from "https://js.sbx.supertab.co/v1/experiences.js";
+        import { createPaygateExperience } from "https://js.sbx.supertab.co/v1/experiences.js";
 
-        const { show } = await createPurchaseButtonExperience({
-            containerElement: document.getElementById("purchase-button-container"),
-            experienceId: "experience.601f09d5-842d-439f-8af8-bd94d4a08d9e",
+        const { show } = await createPaygateExperience({
             clientId: "live_client.6edc137d-5253-46a0-a29d-631a38a77af5",
+            experienceId: "experience.56d6a3e7-7975-4a8c-b9c1-ff92b02c4e6c",
             merchantName: "Github pages",
-            merchantLogoUrl: "",
+            merchantLogoUrl: "https://imagedelivery.net/QJK89lvTX7ncD07wQAcNLQ/image.3a33fe28-a3bc-4ef4-bf22-1e5bdb15e4c6/public",
             onPurchaseCompleted: () => {
                 //insert your code to grant user access
-                console.log("Purchase completed!");
+                console.log("Paygate completed!");
             },
             onPurchaseCanceled: () => {
                 //insert your code to handle when purchase is not completed
-                console.log("Purchase canceled!");
+                console.log("Paygate canceled!");
+                // Check if the current path is not the root
+                if (window.location.pathname !== "https://ofilimonlecka.github.io/") {
+                    // Redirect to the paygateRedirectUrl
+                    window.location.href = "https://ofilimonlecka.github.io/";
+                }
             },
-            onError: () => {
+            onPriorEntitlement: () => {
+                //insert your code to handle when user has prior entitlement
+                console.log("Paygate: User has prior entitlement. Showing the content.");
+            },
+            onError: (error) => {
                 //insert your code to handle an unexpected error
-                console.error("Purchase error!");
+                console.error("Paygate error!", error);
             },
         });
+
+        // The "show()" method call is an example of how to trigger the Paygate.
+        // For custom behavior, use methods like "hide", "toggle", "isShowing", or "destroy".
+        show();
     </script>
 
 </body>
