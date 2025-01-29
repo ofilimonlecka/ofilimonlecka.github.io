@@ -22,6 +22,7 @@
         <section id="home">
             <h2>Home</h2>
             <p>This is the homepage. Welcome to the simple HTML website example!</p>
+            <div id="purchase-button-container"></div>
         </section>
 
         <section id="contact">
@@ -33,6 +34,29 @@
     <footer>
         <p>&copy; 2025 Your Website. All rights reserved.</p>
     </footer>
+
+    <script type="module">
+        import { createPurchaseButtonExperience } from "https://js.supertab.co/v2/experiences.js";
+
+        const { destroy } = await createPurchaseButtonExperience({
+            containerElement: document.getElementById("purchase-button-container"),
+            experienceId: "experience.9f007033-2c54-40c9-a4f5-c610f63cd5e1",
+            clientId: "live_client.ea8f4755-76ca-41a4-a6ad-a28422f2571c",
+            onPurchaseCompleted: () => {
+                destroy();
+                //insert your code to grant user access
+                console.log("Purchase completed!");
+            },
+            onPurchaseCanceled: () => {
+                //insert your code to handle when purchase is not completed
+                console.log("Purchase canceled!");
+            },
+            onError: () => {
+                //insert your code to handle an unexpected error
+                console.error("Purchase error!");
+            },
+        });
+    </script>
 
 </body>
 </html>
