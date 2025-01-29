@@ -39,14 +39,13 @@
     </footer>
 
    
+   
     <script type="module">
-        import { createPaygateExperience } from "https://js.sbx.supertab.co/v2/experiences.js";
+        import { createPaygateExperience } from "https://js.supertab.co/v2/experiences.js";
 
         const { show } = await createPaygateExperience({
-          clientId: "live_client.6edc137d-5253-46a0-a29d-631a38a77af5",
-          experienceId: "experience.56d6a3e7-7975-4a8c-b9c1-ff92b02c4e6c",
-          merchantName: "Github pages",
-          merchantLogoUrl: "https://imagedelivery.net/QJK89lvTX7ncD07wQAcNLQ/image.3a33fe28-a3bc-4ef4-bf22-1e5bdb15e4c6/public",
+          clientId: "live_client.ea8f4755-76ca-41a4-a6ad-a28422f2571c",
+          experienceId: "experience.093f374a-496d-479d-bbf1-f6fb010520c0",
           onPurchaseCompleted: () => {
             //insert your code to grant user access
             console.log("Paygate completed!");
@@ -54,11 +53,9 @@
           onPurchaseCanceled: () => {
             //insert your code to handle when purchase is not completed
             console.log("Paygate canceled!");
-            // Check if the current path is not the root
-            if (window.location.pathname !== "https://ofilimonlecka.github.io/") {
-              // Redirect to the paygateRedirectUrl
-              window.location.href = "https://ofilimonlecka.github.io/";
-            }
+
+            // Redirect to the paygateRedirectUrl
+            window.location.href = "https://ofilimonlecka.github.io";
           },
           onPriorEntitlement: () => {
             //insert your code to handle when user has prior entitlement
@@ -74,6 +71,7 @@
         // For custom behavior, use methods like "hide", "toggle", "isShowing", or "destroy".
         show();
       </script>
+    
     
 
 </body>
