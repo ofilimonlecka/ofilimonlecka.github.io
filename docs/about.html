@@ -41,12 +41,13 @@
    
    
     
+  
       <script type="module">
-        import { createPaygateExperience } from "https://js.sbx.supertab.co/v2/experiences.js";
+        import { createPaygateExperience } from "https://js.supertab.co/v2/experiences.js";
 
         const { show } = await createPaygateExperience({
-          clientId: "test_client.dc3bd883-7489-45a1-a60d-f4cf5e2ea7e5",
-          experienceId: "experience.7c85b141-7681-4aaf-98de-68458cf9b90c",
+          clientId: "test_client.58d35628-db46-4c38-a08d-eb82cb44023b",
+          experienceId: "experience.093f374a-496d-479d-bbf1-f6fb010520c0",
           onPurchaseCompleted: () => {
             //insert your code to grant user access
             console.log("Paygate completed!");
@@ -56,7 +57,7 @@
             console.log("Paygate canceled!");
 
             // Redirect to the paygateRedirectUrl
-            window.location.href = "https://ofilimonlecka.github.io/";
+            window.location.href = "https://ofilimonlecka.github.io";
           },
           onPriorEntitlement: () => {
             //insert your code to handle when user has prior entitlement
@@ -72,6 +73,7 @@
         // For custom behavior, use methods like "hide", "toggle", "isShowing", or "destroy".
         show();
       </script>
+    
     
     
     
