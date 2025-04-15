@@ -41,12 +41,13 @@
    
    
   
+     
       <script type="module">
-        import { createPaygateExperience } from "https://js.supertab.co/v2/experiences.js";
+        import { createPaygateExperience } from "https://js.sbx.supertab.co/v2/experiences.js";
 
         const { show } = await createPaygateExperience({
-          clientId: "live_client.ea8f4755-76ca-41a4-a6ad-a28422f2571c",
-          experienceId: "experience.5245f128-40ad-4e49-bc32-9633ec5437c5",
+          clientId: "live_client.6edc137d-5253-46a0-a29d-631a38a77af5",
+          experienceId: "experience.5f461f81-74f1-4cfa-a524-42fc6ede232f",
           onPurchaseCompleted: () => {
             //insert your code to grant user access
             console.log("Paygate completed!");
@@ -72,6 +73,7 @@
         // For custom behavior, use methods like "hide", "toggle", "isShowing", or "destroy".
         show();
       </script>
+    
     
         
     
