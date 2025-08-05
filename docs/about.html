@@ -43,37 +43,40 @@
   
      
 
-      <script type="module">
-        import { createPaygateExperience } from "https://js.supertab.co/v2/experiences.js";
 
-        const { show } = await createPaygateExperience({
-          clientId: "live_client.ea8f4755-76ca-41a4-a6ad-a28422f2571c",
-          experienceId: "experience.edea7c13-b234-4d5a-8dd6-82b50e5c4412",
-          onPurchaseCompleted: () => {
-            //insert your code to grant user access
-            console.log("Paygate completed!");
-          },
-          onPurchaseCanceled: () => {
-            //insert your code to handle when purchase is not completed
-            console.log("Paygate canceled!");
+    <script type="module">
+      import { Supertab } from "https://js.sbx.supertab.co/v3/supertab.js";
 
-            // Redirect to the paygateRedirectUrl
-            window.location.href = "https://ofilimonlecka.github.io";
-          },
-          onPriorEntitlement: () => {
-            //insert your code to handle when user has prior entitlement
-            console.log("Paygate: User has prior entitlement. Showing the content.");
-          },
-          onError: (error) => {
-            //insert your code to handle an unexpected error
-            console.error("Paygate error!", error);
-          },
-        })
+      // Initialize Supertab client
+      const supertabClient = new Supertab({ clientId: "live_client.6edc137d-5253-46a0-a29d-631a38a77af5" });
 
-        // The "show()" method call is an example of how to trigger the Paygate.
-        // For custom behavior, use methods like "hide", "toggle", "isShowing", or "destroy".
-        show();
-      </script>
+      // Create the paygate
+      const { initialState, show } = await supertabClient.createPaygate({
+        experienceId: "experience.c2aee53e-bd5e-4396-8f13-47d98126ae63"
+      });
+
+      // Check if the user has prior entitlement
+      if (initialState.priorEntitlement) {
+        // Insert your code to handle when user has prior entitlement when accessing the page
+        console.log("User has prior entitlement", initialState.priorEntitlement);
+      } else {
+        // Show the paygate
+        const { priorEntitlement, purchase, purchasedOffering } = await show();
+
+        if (priorEntitlement) {
+          // Insert your code to handle when user has prior entitlement
+          console.log("User has prior entitlement", priorEntitlement);
+        } else if (purchase && purchase.status === "completed") {
+          // Insert your code to handle when user purchases an offering
+          console.log("Purchase completed!", purchase);
+        } else {
+          // Insert your code to handle when user abandons the flow without purchase or prior entitlement
+          console.log("Purchase canceled!");
+          window.location.href = "https://ofilimonlecka.github.io";
+        }
+      }
+    </script>
+  
     
     
         
