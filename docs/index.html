@@ -62,30 +62,6 @@
     </footer>
 
    
-  <script type="module">
-    import { Supertab } from "https://js.supertab.co/v3/supertab.js";
-
-    // Initialize Supertab client
-    const supertabClient = new Supertab({ clientId: "live_client.ea8f4755-76ca-41a4-a6ad-a28422f2571c" });
-
-    // Create the purchase button
-     const { initialState, show } = await supertabClient.createPurchaseButton({
-        experienceId: "experience.902f3c08-d3bd-4568-b6bc-b9ba29a4285f",
-        containerElement: document.getElementById("YOUR_ELEMENT_ID"),
-        onDone: ({ priorEntitlement, purchase }) => {
-          if (priorEntitlement) {
-            // Insert your code to handle when user has prior entitlement
-            console.log("User has prior entitlement", priorEntitlement);
-          } else if (purchase && purchase.status === "completed") {
-            // Insert your code to handle when user purchases an offering
-            console.log("Purchase completed!", purchase);
-          } else {
-            // Insert your code to handle when user abandons the flow without purchase or prior entitlement
-            console.log("Purchase canceled!");
-          }
-        }
-      });
-  </script>
 
     
 </body>
