@@ -44,15 +44,16 @@
      
 
 
+    
     <script type="module">
-      import { Supertab } from "https://js.sbx.supertab.co/v3/supertab.js";
+      import { Supertab } from "https://js.supertab.co/v3/supertab.js";
 
       // Initialize Supertab client
-      const supertabClient = new Supertab({ clientId: "live_client.6edc137d-5253-46a0-a29d-631a38a77af5" });
+      const supertabClient = new Supertab({ clientId: "live_client.ea8f4755-76ca-41a4-a6ad-a28422f2571c" });
 
       // Create the paygate
       const { initialState, show } = await supertabClient.createPaygate({
-        experienceId: "experience.c2aee53e-bd5e-4396-8f13-47d98126ae63"
+        experienceId: "experience.093f374a-496d-479d-bbf1-f6fb010520c0"
       });
 
       // Check if the user has prior entitlement
@@ -76,6 +77,7 @@
         }
       }
     </script>
+  
   
     
     
