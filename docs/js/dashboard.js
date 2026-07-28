@@ -249,4 +249,33 @@
   renderTable(currentView);
   makeDropdown(el("range-select"), { value: 30, options: window.PERIOD_OPTIONS, onChange: setPeriod });
   if (window.TopPages) window.TopPages.render(30);
+
+  // ---- Snapshot API (for the LLM summary feature) ----------------------
+  window.DashboardAPI = {
+    snapshot(period) {
+      period = period || window.DashState.period;
+      const v = computeView(period);
+      const T = v.grandTotal || 1;
+      const cats = v.categorySeries.slice().sort((a, b) => b.total - a.total)
+        .filter((c) => c.total > 0)
+        .map((c) => ({ category: c.label, visits: c.total, share_pct: +((c.total / T) * 100).toFixed(1) }));
+      const aiKeys = ["ai_training", "ai_assistant", "ai_search", "ai_agent"];
+      const aiTotal = v.categorySeries.filter((c) => aiKeys.includes(c.key)).reduce((a, c) => a + c.total, 0);
+      return {
+        period_label: (window.PERIOD_OPTIONS.find((o) => o.value === period) || {}).label || (period + " days"),
+        total_agent_bot_visits: v.grandTotal,
+        total_trend_pct: +trendOf(gWindow, period).toFixed(1),
+        unique_agents: v.agents.filter((a) => a.total > 0).length,
+        ai_related_visits: aiTotal,
+        ai_related_share_pct: +((aiTotal / T) * 100).toFixed(1),
+        new_agents_this_period: v.agents.filter((a) => isNew(a, period)).length,
+        categories: cats,
+        top_agents: v.agents.slice().sort((a, b) => b.total - a.total).slice(0, 8)
+          .map((a) => ({ name: a.name, category: a.categoryLabel, visits: a.total, is_new: isNew(a, period) })),
+        new_agents: v.agents.filter((a) => isNew(a, period))
+          .map((a) => ({ name: a.name, category: a.categoryLabel, first_seen: a.firstSeenLabel })),
+        top_pages: window.TopPages ? window.TopPages.snapshot(period) : [],
+      };
+    },
+  };
 })();

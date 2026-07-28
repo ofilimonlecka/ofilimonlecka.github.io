@@ -125,6 +125,15 @@
     }).join("");
   }
 
-  window.TopPages = { render };
+  function snapshot(period) {
+    const f = windowFraction(period);
+    return BASE_PAGES.map((p) => {
+      let total = 0;
+      TYPE_ORDER.forEach((k) => { total += Math.round((p.byType[k] || 0) * f); });
+      return { url: p.url, visits: total, trend_pct: p.trend, top_type: CBK[p.topType].label, top_agents: p.agents };
+    }).sort((a, b) => b.visits - a.visits).slice(0, 6);
+  }
+
+  window.TopPages = { render, snapshot };
   render(30);
 })();
