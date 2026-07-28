@@ -76,39 +76,55 @@
     return { url: def.url, trend, agents, byType };
   }
 
-  const pages = FIXED.concat(GEN_DEFS.map(genRow)).map((p) => {
-    const total = TYPE_ORDER.reduce((a, k) => a + (p.byType[k] || 0), 0);
+  const BASE_PAGES = FIXED.concat(GEN_DEFS.map(genRow)).map((p) => {
     let topType = TYPE_ORDER[0];
     TYPE_ORDER.forEach((k) => { if ((p.byType[k] || 0) > (p.byType[topType] || 0)) topType = k; });
-    return Object.assign({}, p, { total, topType });
-  }).sort((a, b) => b.total - a.total);
+    return Object.assign({}, p, { topType });
+  });
 
-  // --- Render: Top Pages by Traffic -----------------------------------------
-  document.getElementById("top-traffic-body").innerHTML = pages.map((p) => `
-    <tr>
-      <td class="path-cell">${p.url}</td>
-      <td class="col-num">${compact(p.total)}</td>
-      <td class="col-num"><span style="color:${p.trend >= 0 ? "#0f9d58" : "#d93025"};font-weight:600;">${trendFmt(p.trend)}</span></td>
-      <td class="agents-cell">${p.agents.join(", ")}</td>
-    </tr>`).join("");
+  const gd = D.grandDaily, gtot = gd.reduce((a, b) => a + b, 0);
+  function windowFraction(period) {
+    return gtot ? gd.slice(-period).reduce((a, b) => a + b, 0) / gtot : 1;
+  }
 
-  // --- Render: Top Pages by Type --------------------------------------------
-  document.getElementById("top-type-head").innerHTML = `
-    <tr>
-      <th>Page URL</th><th>Top Type</th>
-      ${TYPE_ORDER.map((k) => `<th class="col-num">${CBK[k].label}</th>`).join("")}
-    </tr>`;
-  document.getElementById("top-type-body").innerHTML = pages.map((p) => {
-    const c = CBK[p.topType];
-    const cells = TYPE_ORDER.map((k) => {
-      const v = p.byType[k] || 0;
-      const strong = k === p.topType ? ' style="font-weight:700;"' : "";
-      return `<td class="col-num"${strong}>${v ? compact(v) : 0}</td>`;
+  function render(period) {
+    const f = windowFraction(period);
+    const pages = BASE_PAGES.map((p) => {
+      const byType = {}; let total = 0;
+      TYPE_ORDER.forEach((k) => { const v = Math.round((p.byType[k] || 0) * f); byType[k] = v; total += v; });
+      return Object.assign({}, p, { byType, total });
+    }).sort((a, b) => b.total - a.total);
+
+    // Top Pages by Traffic
+    document.getElementById("top-traffic-body").innerHTML = pages.map((p) => `
+      <tr>
+        <td class="path-cell">${p.url}</td>
+        <td class="col-num">${compact(p.total)}</td>
+        <td class="col-num"><span style="color:${p.trend >= 0 ? "#0f9d58" : "#d93025"};font-weight:600;">${trendFmt(p.trend)}</span></td>
+        <td class="agents-cell">${p.agents.join(", ")}</td>
+      </tr>`).join("");
+
+    // Top Pages by Type — Top Type uses the same category pill as the Agents table
+    document.getElementById("top-type-head").innerHTML = `
+      <tr>
+        <th>Page URL</th><th>Top Type</th>
+        ${TYPE_ORDER.map((k) => `<th class="col-num">${CBK[k].label}</th>`).join("")}
+      </tr>`;
+    document.getElementById("top-type-body").innerHTML = pages.map((p) => {
+      const c = CBK[p.topType];
+      const cells = TYPE_ORDER.map((k) => {
+        const v = p.byType[k] || 0;
+        const strong = k === p.topType ? ' style="font-weight:700;"' : "";
+        return `<td class="col-num"${strong}>${v ? compact(v) : 0}</td>`;
+      }).join("");
+      return `<tr>
+        <td class="path-cell">${p.url}</td>
+        <td><span class="cat-badge"><span class="dot" style="background:${c.color}"></span>${c.label}</span></td>
+        ${cells}
+      </tr>`;
     }).join("");
-    return `<tr>
-      <td class="path-cell">${p.url}</td>
-      <td><span class="type-badge" style="background:${hexToRgba(c.color, 0.16)};color:${c.color};">${c.label}</span></td>
-      ${cells}
-    </tr>`;
-  }).join("");
+  }
+
+  window.TopPages = { render };
+  render(30);
 })();
