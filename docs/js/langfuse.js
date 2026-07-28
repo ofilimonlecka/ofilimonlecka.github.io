@@ -41,6 +41,7 @@
       : "?label=" + encodeURIComponent(opts.label || "production");
     const res = await fetch(c.host + "/api/public/v2/prompts/" + encodeURIComponent(name) + q, {
       headers: { "authorization": authHeader() },
+      cache: "no-store", // always fetch the current label/version, never a stale browser copy
     });
     let data = null; try { data = await res.json(); } catch (e) { /* */ }
     if (res.status === 404) return null; // no such prompt/label yet
