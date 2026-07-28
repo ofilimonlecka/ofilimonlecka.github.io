@@ -152,6 +152,20 @@ h2 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
 .col-seen { color: var(--muted); white-space: nowrap; }
 .spark { width: 96px; height: 26px; display: block; }
 
+/* Static "Top Pages" tables (no drilldown) */
+.agents-table.static tbody tr { cursor: default; }
+.agents-table .path-cell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+  font-weight: 600; white-space: nowrap;
+}
+.agents-table .agents-cell { color: var(--muted); font-size: 12.5px; max-width: 420px; }
+.type-badge {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 650; white-space: nowrap;
+}
+.agents-table.type-table td, .agents-table.type-table th { white-space: nowrap; }
+.agents-table.type-table td.col-num, .agents-table.type-table th.col-num { padding-left: 18px; }
+
 /* Drawer */
 .drawer-scrim {
   position: fixed; inset: 0; background: rgba(16,24,40,0.32); opacity: 0; pointer-events: none;

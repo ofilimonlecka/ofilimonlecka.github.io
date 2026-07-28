@@ -83,6 +83,45 @@
         </table>
       </div>
     </section>
+
+    <!-- Top pages by traffic -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Top Pages by Agent &amp; Bot Traffic</h2>
+          <p class="muted">Pages receiving the most traffic from AI agents and bots.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="agents-table static">
+          <thead>
+            <tr>
+              <th class="col-name">Page URL</th>
+              <th class="col-num">Total Visits</th>
+              <th class="col-num">Trend</th>
+              <th>Top Agents &amp; Bots</th>
+            </tr>
+          </thead>
+          <tbody id="top-traffic-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Top pages by type -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Top Pages by Agent &amp; Bot Type</h2>
+          <p class="muted">Breakdown of agent and bot traffic by type for top content.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="agents-table static type-table">
+          <thead id="top-type-head"></thead>
+          <tbody id="top-type-body"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
   <!-- Drawer -->
@@ -96,5 +135,6 @@
   <script src="js/data.js"></script>
   <script src="js/drawer.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/toppages.js"></script>
 </body>
 </html>
