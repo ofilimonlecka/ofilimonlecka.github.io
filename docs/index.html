@@ -1,68 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple HTML Website</title>
-    <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agents &amp; Bots · Supertab Connect</title>
+  <meta name="description" content="Bot classification dashboard prototype — sample data." />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 </head>
 <body>
-    <!-- Navigation must come first for fixed top bar -->
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="#contact">Contact</a>
-    </nav>
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand">
+        <span class="brand-mark">◆</span>
+        <span class="brand-name">Supertab <span class="brand-sub">Connect</span></span>
+      </div>
+      <nav class="topnav">
+        <a href="#" class="active">Agents &amp; Bots</a>
+        <a href="#">Overview</a>
+        <a href="#">Settings</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <span class="site-pill">supertab.co</span>
+      <div class="range-select" id="range-select">
+        <span class="cal">🗓</span> Last 30 days <span class="chev">▾</span>
+      </div>
+    </div>
+  </header>
 
-    <header>
-        <h1>Welcome to My Website</h1>
-    </header>
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <h1>Agents &amp; Bots</h1>
+        <p class="muted">Classified automated traffic for the selected period. <span class="mock-tag">sample data</span></p>
+      </div>
+      <button class="btn-summary" id="btn-summary" title="Coming in phase 2">✨ Summarize (soon)</button>
+    </div>
 
-    <main>
-        <section id="home">
-            <h2>Home</h2>
-            <p>This is the homepage. Welcome to the simple HTML website example!</p>
-            <div id="purchase-button-container"></div>
-        </section>
+    <!-- KPI row -->
+    <section class="kpi-row" id="kpi-row"></section>
 
-        <section id="contact">
-            <h2>Contact</h2>
-            <p>You can add your contact details or a form here to reach out.</p>
-            
-  <script type="module">
-    import { Supertab } from "https://js.supertab.co/v3/supertab.js";
+    <!-- Main chart -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Agents &amp; Bots Visits Over Time</h2>
+          <p class="muted">Traffic from different agent and bot types in the selected period.</p>
+        </div>
+        <button class="ghost-btn" id="toggle-all">Show all</button>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div id="main-chart" class="main-chart"></div>
+    </section>
 
-    // Initialize Supertab client
-    const supertabClient = new Supertab({ clientId: "live_client.ea8f4755-76ca-41a4-a6ad-a28422f2571c" });
+    <!-- Agents table -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Agents</h2>
+          <p class="muted">Every classified agent seen in this period. Select one for details.</p>
+        </div>
+        <div class="table-tools">
+          <input type="search" id="agent-search" placeholder="Search agents…" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="agents-table">
+          <thead>
+            <tr>
+              <th class="col-name">Agent</th>
+              <th class="col-cat">Category</th>
+              <th class="col-num sortable active-sort" data-sort="total">Visits</th>
+              <th class="col-pages col-num sortable" data-sort="pagesVisited">Pages</th>
+              <th class="col-trend">Trend</th>
+              <th class="col-seen">Last seen</th>
+            </tr>
+          </thead>
+          <tbody id="agents-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
 
-    // Create the purchase button
-     const { initialState, show } = await supertabClient.createPurchaseButton({
-        experienceId: "experience.902f3c08-d3bd-4568-b6bc-b9ba29a4285f",
-        containerElement: document.getElementById("YOUR_ELEMENT_ID"),
-        onDone: ({ priorEntitlement, purchase }) => {
-          if (priorEntitlement) {
-            // Insert your code to handle when user has prior entitlement
-            console.log("User has prior entitlement", priorEntitlement);
-          } else if (purchase && purchase.status === "completed") {
-            // Insert your code to handle when user purchases an offering
-            console.log("Purchase completed!", purchase);
-          } else {
-            // Insert your code to handle when user abandons the flow without purchase or prior entitlement
-            console.log("Purchase canceled!");
-          }
-        }
-      });
-  </script>
-  
-        </section>
-    </main>
+  <!-- Drawer -->
+  <div class="drawer-scrim" id="drawer-scrim"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true"></aside>
 
-    <footer>
-        <p>&copy; 2025 Your Website. All rights reserved.</p>
-    </footer>
+  <footer class="footer">
+    <span>Prototype · sample data · Supertab Connect dashboard recreation</span>
+  </footer>
 
-   
-
-    
+  <script src="js/data.js"></script>
+  <script src="js/drawer.js"></script>
+  <script src="js/dashboard.js"></script>
 </body>
 </html>
