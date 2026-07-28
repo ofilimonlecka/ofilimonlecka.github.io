@@ -114,22 +114,33 @@
 
   // ---- API call ----------------------------------------------------------
   async function callClaude(settings, messages, systemText) {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": settings.apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify({
-        model: settings.model || DEFAULT_MODEL,
-        max_tokens: 2000,
-        thinking: { type: "disabled" },
-        system: systemText,
-        messages: messages,
-      }),
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 90000); // never let a hung request wedge the button
+    let res;
+    try {
+      res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": settings.apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: settings.model || DEFAULT_MODEL,
+          max_tokens: 2000,
+          thinking: { type: "disabled" },
+          system: systemText,
+          messages: messages,
+        }),
+      });
+    } catch (e) {
+      if (e.name === "AbortError") throw new Error("Request timed out after 90s. Try again.");
+      throw new Error("Network error reaching the Anthropic API: " + (e.message || e));
+    } finally {
+      clearTimeout(timer);
+    }
     let data;
     try { data = await res.json(); } catch (e) { throw new Error("HTTP " + res.status + " (unparseable response)"); }
     if (!res.ok) throw new Error((data && data.error && data.error.message) || ("HTTP " + res.status));
@@ -215,14 +226,14 @@
     if (inFlight) return;
     const settings = getSettings();
     if (!settings.apiKey) { openSettings(); return; }
+    inFlight = true;
     showPanel();
     setLoading();
     fbEl().innerHTML = "";
-    inFlight = true;
-    const built = buildMessages();
-    const startTime = new Date().toISOString();
-    const t0 = performance.now();
     try {
+      const built = buildMessages();
+      const startTime = new Date().toISOString();
+      const t0 = performance.now();
       const sys = await resolveSystem();
       const data = await callClaude(settings, built.messages, sys.text);
       const endTime = new Date().toISOString();
