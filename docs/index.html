@@ -51,6 +51,7 @@
         </div>
       </div>
       <div id="summary-body" class="summary-body"></div>
+      <div class="summary-feedback" id="summary-feedback"></div>
       <div class="summary-meta" id="summary-meta"></div>
     </section>
 
@@ -150,6 +151,7 @@
       <button class="drawer-close" id="settings-close">✕</button>
     </div>
     <div class="modal-body">
+      <div class="settings-group-label">Claude (summaries)</div>
       <label class="field">
         <span>Anthropic API key</span>
         <input type="password" id="set-key" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
@@ -158,7 +160,26 @@
         <span>Model</span>
         <select id="set-model"></select>
       </label>
-      <p class="warn">⚠️ Your key is stored only in this browser (localStorage) and sent directly to the Anthropic API from your machine. Use a personal, limited key — never a production secret. Bring-your-own-key is for this personal prototype, not a shared or public site.</p>
+
+      <div class="settings-group-label">Langfuse (tracing &amp; evals) <span class="opt">optional</span></div>
+      <label class="field">
+        <span>Public key</span>
+        <input type="text" id="set-lf-pk" placeholder="pk-lf-..." autocomplete="off" spellcheck="false" />
+      </label>
+      <label class="field">
+        <span>Secret key</span>
+        <input type="password" id="set-lf-sk" placeholder="sk-lf-..." autocomplete="off" spellcheck="false" />
+      </label>
+      <label class="field">
+        <span>Host</span>
+        <input type="text" id="set-lf-host" placeholder="https://cloud.langfuse.com" autocomplete="off" spellcheck="false" list="lf-hosts" />
+        <datalist id="lf-hosts">
+          <option value="https://cloud.langfuse.com"></option>
+          <option value="https://us.cloud.langfuse.com"></option>
+        </datalist>
+      </label>
+
+      <p class="warn">⚠️ Keys are stored only in this browser (localStorage) and sent directly to Anthropic / Langfuse from your machine. Use personal, limited keys — never production secrets. Bring-your-own-key is for this personal prototype, not a shared or public site.</p>
     </div>
     <div class="modal-foot">
       <button class="ghost-btn" id="settings-cancel">Cancel</button>
@@ -175,6 +196,7 @@
   <script src="js/toppages.js"></script>
   <script src="js/drawer.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/langfuse.js"></script>
   <script src="js/summary.js"></script>
 </body>
 </html>

@@ -56,6 +56,9 @@
     const s = getSettings();
     el("set-key").value = s.apiKey || "";
     el("set-model").value = s.model || DEFAULT_MODEL;
+    el("set-lf-pk").value = s.lfPublicKey || "";
+    el("set-lf-sk").value = s.lfSecretKey || "";
+    el("set-lf-host").value = s.lfHost || "https://cloud.langfuse.com";
     el("settings-modal").classList.add("open");
     el("settings-modal").setAttribute("aria-hidden", "false");
     el("settings-scrim").classList.add("open");
@@ -66,7 +69,14 @@
     el("settings-scrim").classList.remove("open");
   }
   function saveSettings() {
-    setSettings({ apiKey: el("set-key").value.trim(), model: el("set-model").value });
+    const prev = getSettings();
+    setSettings(Object.assign({}, prev, {
+      apiKey: el("set-key").value.trim(),
+      model: el("set-model").value,
+      lfPublicKey: el("set-lf-pk").value.trim(),
+      lfSecretKey: el("set-lf-sk").value.trim(),
+      lfHost: el("set-lf-host").value.trim() || "https://cloud.langfuse.com",
+    }));
     closeSettings();
   }
 
@@ -134,6 +144,57 @@
     el("summary-regen").disabled = false;
   }
 
+  // ---- Langfuse logging + feedback --------------------------------------
+  let lastTraceId = null;
+  function fbEl() { return el("summary-feedback"); }
+  async function logToLangfuse(built, data, text, timing) {
+    lastTraceId = null;
+    if (!window.Langfuse || !window.Langfuse.isConfigured()) {
+      fbEl().innerHTML = '<span class="fb-hint">💡 Add Langfuse keys in <a href="#" id="fb-settings">Settings</a> to trace this call and rate it — the on-ramp to evals.</span>';
+      const s = el("fb-settings"); if (s) s.addEventListener("click", (e) => { e.preventDefault(); openSettings(); });
+      return;
+    }
+    fbEl().innerHTML = '<span class="fb-hint"><span class="spinner"></span> Logging trace to Langfuse…</span>';
+    try {
+      const res = await window.Langfuse.logSummary({
+        traceInput: built.snapshot,
+        genInput: { system: SYSTEM, messages: built.messages },
+        output: text,
+        model: data.model,
+        usage: data.usage,
+        modelParameters: { max_tokens: 2000, thinking: "disabled" },
+        startTime: timing.startTime,
+        endTime: timing.endTime,
+        metadata: { period: built.snapshot.period_label, prompt_version: "v1-local", latency_ms: timing.latency },
+      });
+      lastTraceId = res && res.traceId;
+      renderFeedback();
+    } catch (e) {
+      fbEl().innerHTML = '<span class="fb-hint fb-warn">⚠️ Langfuse logging failed: ' + esc(e.message || String(e)) + "</span>";
+    }
+  }
+  function renderFeedback() {
+    fbEl().innerHTML =
+      '<span class="fb-q">Was this summary useful?</span>' +
+      '<button class="fb-btn" data-v="1">👍 Helpful</button>' +
+      '<button class="fb-btn" data-v="0">👎 Not helpful</button>' +
+      '<span class="fb-status" id="fb-status"></span>';
+    fbEl().querySelectorAll(".fb-btn").forEach((b) =>
+      b.addEventListener("click", () => sendScore(Number(b.dataset.v))));
+  }
+  async function sendScore(value) {
+    const status = el("fb-status");
+    if (status) status.textContent = "Sending…";
+    fbEl().querySelectorAll(".fb-btn").forEach((b) => (b.disabled = true));
+    try {
+      await window.Langfuse.postScore({ traceId: lastTraceId, value: value, name: "user-feedback", dataType: "BOOLEAN" });
+      fbEl().innerHTML = '<span class="fb-done">✓ Feedback logged to Langfuse (' + (value ? "👍 helpful" : "👎 not helpful") + ")</span>";
+    } catch (e) {
+      if (status) status.textContent = "⚠️ " + (e.message || String(e));
+      fbEl().querySelectorAll(".fb-btn").forEach((b) => (b.disabled = false));
+    }
+  }
+
   let inFlight = false;
   async function summarize() {
     if (inFlight) return;
@@ -141,15 +202,19 @@
     if (!settings.apiKey) { openSettings(); return; }
     showPanel();
     setLoading();
+    fbEl().innerHTML = "";
     inFlight = true;
-    const { messages } = buildMessages();
+    const built = buildMessages();
+    const startTime = new Date().toISOString();
     const t0 = performance.now();
     try {
-      const data = await callClaude(settings, messages);
+      const data = await callClaude(settings, built.messages);
+      const endTime = new Date().toISOString();
       const latency = Math.round(performance.now() - t0);
       if (data.stop_reason === "refusal") { setError("The model declined to respond to this request."); return; }
       const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
       renderSummary(text || "(empty response)", { model: data.model, usage: data.usage, latency });
+      logToLangfuse(built, data, text || "(empty response)", { startTime: startTime, endTime: endTime, latency: latency });
     } catch (e) {
       setError(e.message || String(e));
     } finally {
