@@ -139,34 +139,38 @@
     { name: "GPTBot",               cat: "ai_training", weight: 7000, pages: 38, ua: "Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)", pool: "content" },
     { name: "ClaudeBot",            cat: "ai_training", weight: 5000, pages: 34, ua: "Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)", pool: "content" },
     { name: "Amazonbot",            cat: "ai_training", weight: 2500, pages: 22, ua: "Mozilla/5.0 (compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot)", pool: "content" },
-    { name: "CCBot",                cat: "ai_training", weight: 1800, pages: 26, ua: "CCBot/2.0 (https://commoncrawl.org/faq/)", pool: "content" },
+    { name: "CCBot",                cat: "ai_training", weight: 1800, pages: 26, ua: "CCBot/2.0 (https://commoncrawl.org/faq/)", pool: "content", first: 8 },
     // AI Search
-    { name: "OAI-SearchBot",        cat: "ai_search", weight: 4000, pages: 24, ua: "Mozilla/5.0 (compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot)", pool: "content" },
+    { name: "OAI-SearchBot",        cat: "ai_search", weight: 4000, pages: 24, ua: "Mozilla/5.0 (compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot)", pool: "content", first: 14 },
     { name: "PerplexityBot",        cat: "ai_search", weight: 2800, pages: 20, ua: "Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)", pool: "content" },
-    { name: "Claude-SearchBot",     cat: "ai_search", weight: 1400, pages: 14, ua: "Mozilla/5.0 (compatible; Claude-SearchBot/1.0; +search@anthropic.com)", pool: "content" },
+    { name: "Claude-SearchBot",     cat: "ai_search", weight: 700, pages: 14, ua: "Mozilla/5.0 (compatible; Claude-SearchBot/1.0; +search@anthropic.com)", pool: "content", first: 27 },
     // AI Assistant
     { name: "ChatGPT-User",         cat: "ai_assistant", weight: 3500, pages: 18, ua: "Mozilla/5.0 (compatible; ChatGPT-User/1.0; +https://openai.com/bot)", pool: "content" },
-    { name: "Perplexity-User",      cat: "ai_assistant", weight: 1500, pages: 12, ua: "Mozilla/5.0 (compatible; Perplexity-User/1.0; +https://perplexity.ai)", pool: "content" },
-    { name: "Claude-User",          cat: "ai_assistant", weight: 1200, pages: 10, ua: "Mozilla/5.0 (compatible; Claude-User/1.0; +user@anthropic.com)", pool: "content" },
+    { name: "Perplexity-User",      cat: "ai_assistant", weight: 1100, pages: 12, ua: "Mozilla/5.0 (compatible; Perplexity-User/1.0; +https://perplexity.ai)", pool: "content", first: 23 },
+    { name: "Claude-User",          cat: "ai_assistant", weight: 1200, pages: 10, ua: "Mozilla/5.0 (compatible; Claude-User/1.0; +user@anthropic.com)", pool: "content", first: 17 },
     // AI Agent
     { name: "ChatGPT-Agent",        cat: "ai_agent", weight: 2800, pages: 16, ua: "Mozilla/5.0 (compatible; ChatGPT-Agent/1.0; +https://openai.com/agent)", pool: "content" },
-    { name: "Operator",             cat: "ai_agent", weight: 1500, pages: 12, ua: "Mozilla/5.0 (compatible; Operator/1.0; +https://openai.com/operator)", pool: "content" },
-    { name: "Gemini-Agent",         cat: "ai_agent", weight: 900,  pages: 9,  ua: "Mozilla/5.0 (compatible; Gemini-Agent/1.0; +https://deepmind.google)", pool: "content" },
+    { name: "Operator",             cat: "ai_agent", weight: 1000, pages: 12, ua: "Mozilla/5.0 (compatible; Operator/1.0; +https://openai.com/operator)", pool: "content", first: 25 },
+    { name: "Gemini-Agent",         cat: "ai_agent", weight: 900,  pages: 9,  ua: "Mozilla/5.0 (compatible; Gemini-Agent/1.0; +https://deepmind.google)", pool: "content", first: 20 },
     // Archiver
     { name: "archive.org_bot",      cat: "archiver", weight: 1400, pages: 28, ua: "Mozilla/5.0 (compatible; archive.org_bot; +http://archive.org/details/archive.org_bot)", pool: "content" },
     { name: "Wayback Save",         cat: "archiver", weight: 600,  pages: 8,  ua: "Wayback/2.0 (+http://web.archive.org)", pool: "content" },
   ];
 
   // ---- Builders -----------------------------------------------------------
-  function buildDaily(rng, weight, bumpIdx) {
+  function buildDaily(rng, weight, bumpIdx, firstSeen) {
+    firstSeen = firstSeen || 0;
     const raw = [];
     for (let i = 0; i < DAYS; i++) {
+      if (i < firstSeen) { raw.push(0); continue; } // not yet seen
       let s = SHAPE[i];
       if (bumpIdx != null) {
         s += 0.9 * Math.exp(-Math.pow(i - bumpIdx, 2) / (2 * 1.3 * 1.3));
       }
+      // newly-arrived agents ramp up over their first few days
+      const ramp = firstSeen > 0 ? Math.min(1, (i - firstSeen + 1) / 4) : 1;
       const noise = 0.72 + rng() * 0.56; // 0.72 .. 1.28
-      raw.push(Math.max(0.001, s * noise));
+      raw.push(Math.max(0.001, s * noise * ramp));
     }
     const sum = raw.reduce((a, b) => a + b, 0);
     const scale = weight / sum;
@@ -258,7 +262,7 @@
   // ---- Assemble -----------------------------------------------------------
   const agents = AGENTS.map((a, idx) => {
     const rng = mulberry32(hashString(a.name) ^ 0x9e3779b9);
-    const daily = buildDaily(rng, a.weight, a.bump);
+    const daily = buildDaily(rng, a.weight, a.bump, a.first);
     const total = daily.reduce((x, y) => x + y, 0);
     let topIdx = 0;
     for (let i = 1; i < daily.length; i++) if (daily[i] > daily[topIdx]) topIdx = i;
@@ -274,6 +278,8 @@
       color: CATEGORY_BY_KEY[a.cat].color,
       ua: a.ua,
       lastSeen: a.lastSeen || LAST_SEEN_POOL[Math.floor(rng() * 9)],
+      firstSeen: a.first || 0,
+      firstSeenLabel: a.first ? dates[a.first].label : null,
       daily,
       total,
       topDay: dates[topIdx].label,

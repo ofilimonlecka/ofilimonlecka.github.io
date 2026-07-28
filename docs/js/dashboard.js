@@ -19,6 +19,7 @@
       return {
         ref: a, id: a.id, name: a.name, ua: a.ua, color: a.color,
         category: a.category, categoryLabel: a.categoryLabel, lastSeen: a.lastSeen,
+        firstSeen: a.firstSeen, firstSeenLabel: a.firstSeenLabel,
         pagesVisited: a.pagesVisited, daily, total, topDay: dates[argmax(daily)].label,
       };
     });
@@ -31,38 +32,67 @@
   }
 
   // ---- KPI row ------------------------------------------------------------
-  function pctChange(period) {
-    const g = D.grandDaily, len = g.length;
-    let cur = sum(g.slice(len - period)), prev;
-    if (len >= 2 * period) {
-      prev = sum(g.slice(len - 2 * period, len - period));
-    } else {
-      const w = g.slice(len - period), h = Math.floor(w.length / 2);
-      prev = sum(w.slice(0, h)); cur = sum(w.slice(h));
-    }
-    return prev ? ((cur - prev) / prev) * 100 : 0;
+  const HUMAN_PER_DAY = 5900; // synthetic human-traffic baseline for the "% of total" card
+  const compact = (n) => {
+    if (n >= 1000) { const v = Math.round((n / 1000) * 10) / 10; return (Number.isInteger(v) ? v : v.toFixed(1)) + "K"; }
+    return String(n);
+  };
+  // Metric value over an index window [start, end)
+  const gWindow = (s, e) => sum(D.grandDaily.slice(s, e));
+  const activeAgents = (s, e) => D.agents.filter((a) => a.daily.slice(s, e).some((v) => v > 0)).length;
+  const pctWindow = (s, e) => { const g = gWindow(s, e); return (g / (g + HUMAN_PER_DAY * (e - s))) * 100; };
+  // Generic trend: compare current window to the preceding one (halves fallback for 30d)
+  function windowPair(valueFn, period) {
+    const len = 30;
+    if (len >= 2 * period) return [valueFn(len - 2 * period, len - period), valueFn(len - period, len)];
+    const s = len - period, mid = s + Math.floor(period / 2);
+    return [valueFn(s, mid), valueFn(mid, len)];
   }
+  function trendOf(valueFn, period) { const [prev, cur] = windowPair(valueFn, period); return prev ? ((cur - prev) / prev) * 100 : 0; }
+  function trendPoints(valueFn, period) { const [prev, cur] = windowPair(valueFn, period); return cur - prev; } // for percentage metrics
+  function isNew(agent, period) {
+    return agent.firstSeen > 0 && agent.firstSeen >= 30 - period;
+  }
+
+  const ICONS = {
+    cursor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l6.5 15.5 2.4-6.6 6.6-2.4z"/><path d="M14.5 14.5L19 19"/></svg>',
+    fingerprint: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10a2 2 0 0 0-2 2c0 1.5.5 3 .5 4"/><path d="M12 6a6 6 0 0 0-6 6c0 2 .5 3 .5 4"/><path d="M12 6a6 6 0 0 1 6 6c0 1 0 2-.3 3"/><path d="M8.5 12a3.5 3.5 0 0 1 7 0c0 2-.3 3.5-.3 4.5"/><path d="M6.8 18.5c-.2-.7-.3-1.3-.3-2"/></svg>',
+    pie: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M12 3v9h9a9 9 0 0 0-9-9z" opacity=".55"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+  };
+
+  function trendBadge(pct) {
+    const down = pct < 0;
+    const arrow = down
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l7 7"/><path d="M17 17l-7 0 0-7"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l7-7"/><path d="M17 7l0 7-7 0"/></svg>';
+    const val = (down ? "−" : "+") + Math.abs(pct).toFixed(Math.abs(pct) < 1 ? 1 : 0) + "%";
+    return `<span class="kpi-trend ${down ? "down" : "up"}">${arrow}${val}</span>`;
+  }
+
   function renderKpis(view) {
-    const aiKeys = ["ai_training", "ai_assistant", "ai_search", "ai_agent"];
-    const aiTotal = view.categorySeries.filter((c) => aiKeys.includes(c.key)).reduce((a, c) => a + c.total, 0);
-    const spoofed = view.categorySeries.find((c) => c.key === "spoofed").total;
-    const change = pctChange(view.period);
-    const cls = change >= 0 ? "up" : "down", arrow = change >= 0 ? "▲" : "▼";
-    const active = view.agents.filter((a) => a.total > 0).length;
-    const T = view.grandTotal || 1;
+    const p = view.period;
+    const newCount = view.agents.filter((a) => isNew(a, p)).length;
     const cards = [
-      { label: "Total Visits", value: fmt(view.grandTotal), sub: `<span class="${cls}">${arrow} ${Math.abs(change).toFixed(1)}%</span> vs. previous period` },
-      { label: "AI-related", value: fmt(aiTotal), sub: `${((aiTotal / T) * 100).toFixed(1)}% of all traffic` },
-      { label: "Spoofed", value: fmt(spoofed), sub: `${((spoofed / T) * 100).toFixed(1)}% of all traffic` },
-      { label: "Agents Tracked", value: fmt(active), sub: `across ${D.categories.length} categories` },
+      { icon: "cursor", label: "Total Agent &amp; Bot Visits", value: compact(view.grandTotal),
+        trend: trendOf(gWindow, p) },
+      { icon: "fingerprint", label: "Unique Agents &amp; Bots", value: fmt(view.agents.filter((a) => a.total > 0).length),
+        trend: trendOf(activeAgents, p) },
+      { icon: "pie", label: "Agent &amp; Bot % of Total Traffic", value: Math.round(pctWindow(30 - p, 30)) + "%",
+        trend: trendPoints(pctWindow, p) },
+      { icon: "plus", label: "New Agents &amp; Bots This Period", value: fmt(newCount), trend: null },
     ];
     el("kpi-row").innerHTML = cards.map((c) => `
       <div class="kpi">
+        <div class="kpi-top">
+          <span class="kpi-icon">${ICONS[c.icon]}</span>
+          ${c.trend === null ? "" : trendBadge(c.trend)}
+        </div>
         <div class="kpi-label">${c.label}</div>
         <div class="kpi-value">${c.value}</div>
-        <div class="kpi-sub">${c.sub}</div>
       </div>`).join("");
   }
+  window.__isNew = isNew;
 
   // ---- Legend + main chart ------------------------------------------------
   const hidden = new Set();
@@ -174,7 +204,7 @@
         <td class="col-name">
           <div class="agent-name">
             <span class="dot" style="width:9px;height:9px;border-radius:50%;background:${a.color}"></span>
-            <div><div class="n-main">${a.name}</div><div class="n-ua">${a.ua}</div></div>
+            <div><div class="n-main">${a.name}${isNew(a, currentView.period) ? '<span class="new-badge">New</span>' : ""}</div><div class="n-ua">${a.ua}</div></div>
           </div>
         </td>
         <td class="col-cat"><span class="cat-badge"><span class="dot" style="background:${a.color}"></span>${a.categoryLabel}</span></td>

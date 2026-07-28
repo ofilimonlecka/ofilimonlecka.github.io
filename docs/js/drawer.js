@@ -68,8 +68,8 @@
       <div class="drawer-inner">
         <div class="drawer-head">
           <div>
-            <div class="drawer-title">${agent.name}</div>
-            <div class="drawer-sub">${agent.categoryLabel} · Last seen ${agent.lastSeen}</div>
+            <div class="drawer-title">${agent.name}${window.__isNew && window.__isNew(agent, period) ? '<span class="new-badge">New</span>' : ""}</div>
+            <div class="drawer-sub">${agent.categoryLabel} · Last seen ${agent.lastSeen}${agent.firstSeenLabel ? " · First seen " + agent.firstSeenLabel : ""}</div>
           </div>
           <div class="drawer-actions">
             <button class="refresh-btn" id="drawer-refresh">↻ Refresh</button>
