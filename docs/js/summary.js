@@ -81,7 +81,8 @@
   }
 
   // ---- Prompt ------------------------------------------------------------
-  const SYSTEM = [
+  const PROMPT_NAME = "dashboard-summary";
+  const DEFAULT_SYSTEM = [
     "You are a senior data analyst for the Supertab Connect bot-classification dashboard.",
     "You are given a JSON snapshot of the metrics currently on screen. All figures are synthetic sample data for a prototype.",
     "Write a crisp executive summary for a product/growth reader. Requirements:",
@@ -100,8 +101,19 @@
     return { snapshot: snap, messages: [{ role: "user", content: user }] };
   }
 
+  // Resolve the system prompt: prefer a Langfuse-managed version, else the local default.
+  async function resolveSystem() {
+    if (window.Langfuse && window.Langfuse.isConfigured()) {
+      try {
+        const p = await window.Langfuse.getPrompt(PROMPT_NAME, { label: "production" });
+        if (p && p.text) return { text: p.text, source: "Langfuse v" + p.version, promptName: p.name, promptVersion: p.version };
+      } catch (e) { /* fall through to default */ }
+    }
+    return { text: DEFAULT_SYSTEM, source: "local default", promptName: undefined, promptVersion: undefined };
+  }
+
   // ---- API call ----------------------------------------------------------
-  async function callClaude(settings, messages) {
+  async function callClaude(settings, messages, systemText) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -114,7 +126,7 @@
         model: settings.model || DEFAULT_MODEL,
         max_tokens: 2000,
         thinking: { type: "disabled" },
-        system: SYSTEM,
+        system: systemText,
         messages: messages,
       }),
     });
@@ -140,14 +152,15 @@
     el("summary-body").innerHTML = mdToHtml(text);
     const u = meta.usage || {};
     const tok = (u.input_tokens != null) ? `${u.input_tokens} in / ${u.output_tokens} out tokens · ` : "";
-    el("summary-meta").innerHTML = `<span>${esc(meta.model || "")} · ${tok}${meta.latency} ms</span>`;
+    const prompt = meta.promptSource ? ` · prompt: ${esc(meta.promptSource)}` : "";
+    el("summary-meta").innerHTML = `<span>${esc(meta.model || "")} · ${tok}${meta.latency} ms${prompt}</span>`;
     el("summary-regen").disabled = false;
   }
 
   // ---- Langfuse logging + feedback --------------------------------------
   let lastTraceId = null;
   function fbEl() { return el("summary-feedback"); }
-  async function logToLangfuse(built, data, text, timing) {
+  async function logToLangfuse(built, data, text, timing, sys) {
     lastTraceId = null;
     if (!window.Langfuse || !window.Langfuse.isConfigured()) {
       fbEl().innerHTML = '<span class="fb-hint">💡 Add Langfuse keys in <a href="#" id="fb-settings">Settings</a> to trace this call and rate it — the on-ramp to evals.</span>';
@@ -158,14 +171,16 @@
     try {
       const res = await window.Langfuse.logSummary({
         traceInput: built.snapshot,
-        genInput: { system: SYSTEM, messages: built.messages },
+        genInput: { system: sys.text, messages: built.messages },
         output: text,
         model: data.model,
         usage: data.usage,
         modelParameters: { max_tokens: 2000, thinking: "disabled" },
         startTime: timing.startTime,
         endTime: timing.endTime,
-        metadata: { period: built.snapshot.period_label, prompt_version: "v1-local", latency_ms: timing.latency },
+        promptName: sys.promptName,
+        promptVersion: sys.promptVersion,
+        metadata: { period: built.snapshot.period_label, prompt_source: sys.source, latency_ms: timing.latency },
       });
       lastTraceId = res && res.traceId;
       renderFeedback();
@@ -208,13 +223,14 @@
     const startTime = new Date().toISOString();
     const t0 = performance.now();
     try {
-      const data = await callClaude(settings, built.messages);
+      const sys = await resolveSystem();
+      const data = await callClaude(settings, built.messages, sys.text);
       const endTime = new Date().toISOString();
       const latency = Math.round(performance.now() - t0);
       if (data.stop_reason === "refusal") { setError("The model declined to respond to this request."); return; }
       const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
-      renderSummary(text || "(empty response)", { model: data.model, usage: data.usage, latency });
-      logToLangfuse(built, data, text || "(empty response)", { startTime: startTime, endTime: endTime, latency: latency });
+      renderSummary(text || "(empty response)", { model: data.model, usage: data.usage, latency, promptSource: sys.source });
+      logToLangfuse(built, data, text || "(empty response)", { startTime: startTime, endTime: endTime, latency: latency }, sys);
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -231,5 +247,31 @@
   el("settings-cancel").addEventListener("click", closeSettings);
   el("settings-scrim").addEventListener("click", closeSettings);
   el("settings-save").addEventListener("click", saveSettings);
+  el("lf-push-prompt").addEventListener("click", pushPrompt);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSettings(); });
+
+  // Seed / update the Langfuse-managed prompt from the local default.
+  async function pushPrompt() {
+    const status = el("lf-push-status");
+    // Save current field values first so the keys entered are usable.
+    setSettings(Object.assign({}, getSettings(), {
+      lfPublicKey: el("set-lf-pk").value.trim(),
+      lfSecretKey: el("set-lf-sk").value.trim(),
+      lfHost: el("set-lf-host").value.trim() || "https://cloud.langfuse.com",
+    }));
+    if (!window.Langfuse || !window.Langfuse.isConfigured()) { status.textContent = "⚠️ Enter Langfuse keys first."; return; }
+    status.textContent = "Pushing…";
+    el("lf-push-prompt").disabled = true;
+    try {
+      const p = await window.Langfuse.createPrompt({
+        name: PROMPT_NAME, type: "text", prompt: DEFAULT_SYSTEM, labels: ["production"],
+        commitMessage: "Seeded from dashboard local default",
+      });
+      status.innerHTML = '<span class="fb-done">✓ Saved as v' + (p && p.version != null ? p.version : "?") + " (label: production)</span>";
+    } catch (e) {
+      status.textContent = "⚠️ " + (e.message || String(e));
+    } finally {
+      el("lf-push-prompt").disabled = false;
+    }
+  }
 })();

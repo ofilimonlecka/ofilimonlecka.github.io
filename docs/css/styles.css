@@ -139,6 +139,9 @@ h2 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
 }
 .settings-group-label:first-child { padding-top: 0; }
 .settings-group-label .opt { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted-2); }
+.prompt-sync { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -4px 0 16px; }
+.field-hint { flex-basis: 100%; margin: 2px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--muted-2); }
+.field-hint code { background: #f2f3f5; padding: 0 4px; border-radius: 4px; }
 .spinner {
   width: 15px; height: 15px; border: 2px solid #d5d8ff; border-top-color: var(--accent);
   border-radius: 50%; display: inline-block; animation: spin 0.7s linear infinite;

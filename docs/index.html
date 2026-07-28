@@ -178,6 +178,11 @@
           <option value="https://us.cloud.langfuse.com"></option>
         </datalist>
       </label>
+      <div class="prompt-sync">
+        <button class="ghost-btn" id="lf-push-prompt" type="button">Push default prompt → Langfuse</button>
+        <span class="fb-status" id="lf-push-status"></span>
+        <p class="field-hint">Creates/updates the <code>dashboard-summary</code> prompt (label <code>production</code>) so you can version and edit it in Langfuse. Summaries then use the Langfuse version, linked to your scores.</p>
+      </div>
 
       <p class="warn">⚠️ Keys are stored only in this browser (localStorage) and sent directly to Anthropic / Langfuse from your machine. Use personal, limited keys — never production secrets. Bring-your-own-key is for this personal prototype, not a shared or public site.</p>
     </div>

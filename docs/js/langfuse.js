@@ -28,6 +28,46 @@
       : "id-" + Math.random().toString(16).slice(2) + "-" + Math.random().toString(16).slice(2);
   }
 
+  function authHeader() { const c = cfg(); return "Basic " + btoa(c.pk + ":" + c.sk); }
+
+  // --- Prompt management -------------------------------------------------
+  // Fetch a versioned prompt by name (defaults to the "production" label).
+  async function getPrompt(name, opts) {
+    if (!isConfigured()) throw new Error("Langfuse is not configured");
+    opts = opts || {};
+    const c = cfg();
+    const q = (opts.version != null)
+      ? "?version=" + encodeURIComponent(opts.version)
+      : "?label=" + encodeURIComponent(opts.label || "production");
+    const res = await fetch(c.host + "/api/public/v2/prompts/" + encodeURIComponent(name) + q, {
+      headers: { "authorization": authHeader() },
+    });
+    let data = null; try { data = await res.json(); } catch (e) { /* */ }
+    if (res.status === 404) return null; // no such prompt/label yet
+    if (!res.ok) { const m = (data && (data.message || data.error)) || ("HTTP " + res.status); throw new Error(typeof m === "string" ? m : JSON.stringify(m)); }
+    return {
+      name: data.name, version: data.version, type: data.type, labels: data.labels || [],
+      text: (typeof data.prompt === "string") ? data.prompt : JSON.stringify(data.prompt),
+    };
+  }
+
+  // Create a prompt (or a new version if the name exists). Text type.
+  async function createPrompt(o) {
+    if (!isConfigured()) throw new Error("Langfuse is not configured");
+    const c = cfg();
+    const body = { name: o.name, type: o.type || "text", prompt: o.prompt, labels: o.labels || ["production"] };
+    if (o.config) body.config = o.config;
+    if (o.commitMessage) body.commitMessage = o.commitMessage;
+    const res = await fetch(c.host + "/api/public/v2/prompts", {
+      method: "POST",
+      headers: { "content-type": "application/json", "authorization": authHeader() },
+      body: JSON.stringify(body),
+    });
+    let data = null; try { data = await res.json(); } catch (e) { /* */ }
+    if (!res.ok) { const m = (data && (data.message || data.error)) || ("HTTP " + res.status); throw new Error(typeof m === "string" ? m : JSON.stringify(m)); }
+    return data; // includes the new version number
+  }
+
   async function ingest(batch) {
     const c = cfg();
     const res = await fetch(c.host + "/api/public/ingestion", {
@@ -80,6 +120,7 @@
           model: o.model, modelParameters: o.modelParameters || {},
           input: o.genInput, output: o.output, usage: usage,
           metadata: o.metadata || {}, level: "DEFAULT",
+          promptName: o.promptName, promptVersion: o.promptVersion, // links to a Langfuse-managed prompt version
         },
       },
     ];
@@ -100,5 +141,8 @@
     await ingest(batch);
   }
 
-  window.Langfuse = { isConfigured: isConfigured, logSummary: logSummary, postScore: postScore, host: () => cfg().host };
+  window.Langfuse = {
+    isConfigured: isConfigured, logSummary: logSummary, postScore: postScore,
+    getPrompt: getPrompt, createPrompt: createPrompt, host: () => cfg().host,
+  };
 })();
