@@ -30,44 +30,24 @@
     "PerplexityBot", "Bytespider", "SemrushBot", "Amazonbot",
   ];
 
-  // --- Fixed rows that mirror the real product exports exactly ---------------
-  const FIXED = [
-    { url: "/", trend: 0.3, agents: ["Unidentified bot (Microsoft Azure)", "Spoofed browser", "facebookexternalhit"],
-      byType: { spoofed:46700, page_preview:12600, scraper:7600, seo_tool:4200, search_indexer:1000,
-                ai_training:552, scanner:516, ai_search:134, ai_assistant:30, ai_agent:18, archiver:10, unclassified:40 } },
-    { url: "/supertab-connect", trend: -39, agents: ["AdsBot-Google", "Spoofed browser", "facebookexternalhit"],
-      byType: { spoofed:533, page_preview:253, scraper:247, seo_tool:11, search_indexer:925,
-                ai_training:14, scanner:0, ai_search:4, ai_assistant:0, ai_agent:0, archiver:0, unclassified:13 } },
-    { url: "/robots.txt", trend: -12, agents: ["MJ12bot", "Spoofed browser (Google Cloud)", "generic-bot"],
-      byType: { spoofed:250, page_preview:57, scraper:169, seo_tool:460, search_indexer:132,
-                ai_training:142, scanner:0, ai_search:98, ai_assistant:0, ai_agent:0, archiver:0, unclassified:0 } },
-    { url: "/learn", trend: -9, agents: ["Sogou", "Spoofed browser", "Spoofed browser (Microsoft Azure)"],
-      byType: { spoofed:161, page_preview:24, scraper:43, seo_tool:17, search_indexer:105,
-                ai_training:14, scanner:1, ai_search:9, ai_assistant:0, ai_agent:0, archiver:0, unclassified:10 } },
-    { url: "/sitemap.xml", trend: -24, agents: ["AhrefsBot", "ClaudeBot", "Bingbot"],
-      byType: { spoofed:36, page_preview:0, scraper:8, seo_tool:108, search_indexer:26,
-                ai_training:42, scanner:0, ai_search:0, ai_assistant:0, ai_agent:0, archiver:0, unclassified:0 } },
-  ];
+  // The fixed rows, generated-row definitions, and per-category weights all
+  // come from the active dataset's `topPages` config (see data.js). A default
+  // weight table covers any dataset that omits `baseW`.
+  const TP = (window.ACTIVE_DATASET && window.ACTIVE_DATASET.topPages) || { fixed: [], gen: [] };
+  const FIXED = TP.fixed || [];
+  const GEN_DEFS = TP.gen || [];
+  const BASE_W = TP.baseW || { spoofed:0.5, page_preview:0.14, scraper:0.1, seo_tool:0.06, search_indexer:0.05,
+    ai_training:0.03, scanner:0.03, ai_search:0.02, ai_assistant:0.015, ai_agent:0.012, archiver:0.008, unclassified:0.055 };
 
   // --- Extra generated rows for depth ---------------------------------------
   function mulberry32(a){return function(){a|=0;a=a+0x6d2b79f5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
   function hashString(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
-  const BASE_W = { spoofed:0.5, page_preview:0.14, scraper:0.1, seo_tool:0.06, search_indexer:0.05,
-    ai_training:0.03, scanner:0.03, ai_search:0.02, ai_assistant:0.015, ai_agent:0.012, archiver:0.008, unclassified:0.055 };
-  const GEN_DEFS = [
-    { url: "/genai/", scale: 1500, boost: "ai_training" },
-    { url: "/blog/ai-content-licensing-for-publishers", scale: 1100, boost: "ai_search" },
-    { url: "/about", scale: 720, boost: "page_preview" },
-    { url: "/pricing", scale: 540, boost: "search_indexer" },
-    { url: "/consumers", scale: 300, boost: "spoofed" },
-    { url: "/blog/supertab-rsl-announcement", scale: 190, boost: "page_preview" },
-  ];
   function genRow(def) {
     const rng = mulberry32(hashString(def.url) ^ 0x51ed270b);
     const byType = {};
     TYPE_ORDER.forEach((k) => {
       const boost = k === def.boost ? 2.6 : 1;
-      byType[k] = Math.round(def.scale * BASE_W[k] * boost * (0.6 + rng() * 0.9));
+      byType[k] = Math.round(def.scale * (BASE_W[k] || 0) * boost * (0.6 + rng() * 0.9));
     });
     const agents = [];
     const pool = AGENT_POOL.slice();

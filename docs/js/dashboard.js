@@ -250,6 +250,24 @@
   makeDropdown(el("range-select"), { value: 30, options: window.PERIOD_OPTIONS, onChange: setPeriod });
   if (window.TopPages) window.TopPages.render(30);
 
+  // ---- Dataset switching (reload-based) -----------------------------------
+  // Each dataset is a distinct traffic profile built in data.js. Switching
+  // persists the choice and reloads so every module re-reads the active set.
+  if (window.ACTIVE_DATASET && el("site-pill")) el("site-pill").textContent = window.ACTIVE_DATASET.sitePill;
+  if (el("dataset-select") && window.DATASET_OPTIONS && window.DATASET_OPTIONS.length) {
+    makeDropdown(el("dataset-select"), {
+      value: window.ACTIVE_DATASET ? window.ACTIVE_DATASET.key : window.DATASET_OPTIONS[0].value,
+      options: window.DATASET_OPTIONS,
+      icon: "🗂",
+      onChange: (key) => {
+        try { localStorage.setItem("supertab_dash_dataset", key); } catch (e) { /* ignore */ }
+        const u = new URL(window.location.href);
+        u.searchParams.set("dataset", key);
+        window.location.href = u.toString(); // reload with the new dataset
+      },
+    });
+  }
+
   // ---- Snapshot API (for the LLM summary feature) ----------------------
   window.DashboardAPI = {
     snapshot(period) {
@@ -262,6 +280,7 @@
       const aiKeys = ["ai_training", "ai_assistant", "ai_search", "ai_agent"];
       const aiTotal = v.categorySeries.filter((c) => aiKeys.includes(c.key)).reduce((a, c) => a + c.total, 0);
       return {
+        dataset: window.ACTIVE_DATASET ? window.ACTIVE_DATASET.label : undefined,
         period_label: (window.PERIOD_OPTIONS.find((o) => o.value === period) || {}).label || (period + " days"),
         total_agent_bot_visits: v.grandTotal,
         total_trend_pct: +trendOf(gWindow, period).toFixed(1),
